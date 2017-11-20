@@ -52,7 +52,7 @@ def add_random_edges(g, n):
   i = 0
   while(i < n):
     (n1, n2) = find_non_neighbour_pair()
-    g.add_edge(G.Edge(n1, 1, n2))
+    g.add_edge(G."n1", 1, "n2")
     i += 1
 
 ####### test cases ###########

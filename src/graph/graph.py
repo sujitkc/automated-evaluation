@@ -73,6 +73,8 @@ class Graph:
 
     if(not e.start_node in self.nodes):
       self.nodes[e.start_node] = []
+    if(not e.end_node in self.nodes):
+      self.nodes[e.end_node] = []
     edge_list = self.nodes[e.start_node]
     _add_edge_to_edge_list(edge_list, (e.end_node, e.weight))
 
