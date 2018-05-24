@@ -158,17 +158,15 @@ class Simulation:
       d = self.last_x(p1).subtract(self.last_x(p2))
       return d.unit_vector.multiply(-Simulation._kr_ / (d.magnitude * d.magnitude))
 
-    # frictional force felt by p due to its momentum
-    def frictional_force(p):
-      return self.last_v(p).multiply(-Simulation._kf_)
+    # frictional force felt by p due to its momentum; accounting for kinetic friction #
+    def frictional_force(p1):
+      return self.last_v(p1).multiply(-self._kf_)
 
     mutual_force = Vector.zero_vector(self._dimensionality_)
     for p in self._snapshots_.keys():
       if(p != particle):
-        mutual_force = mutual_force.add(
-                         repulsive_force(particle, p).add(
-                           attractive_force(particle, p)))
-    return mutual_force.add(frictional_force(p))
+        mutual_force = mutual_force.add(attractive_force(particle, p))
+    return mutual_force.add(frictional_force(particle)) 
 
   def is_colliding(self, x, particle):
     for p in self._snapshots_.keys():
