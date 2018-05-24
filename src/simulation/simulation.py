@@ -130,8 +130,7 @@ class Simulation:
 
   def last_v(self, p): return self._snapshots_[p][len(self._snapshots_[p]) - 1]._v_
 
-  def last_a(self, p):
-    return self._snapshots_[p][len(self._snapshots_[p]) - 1]._a_
+  def last_a(self, p): return self._snapshots_[p][len(self._snapshots_[p]) - 1]._a_
 
   # force and acceleration are considered interchangeable by assuming mass = 1
   def acceleration(self, particle):
@@ -139,8 +138,20 @@ class Simulation:
     def attractive_force(p1, p2):
       if(not self._graph_.are_neighbours(p1, p2)):
         return Vector.zero_vector(self._dimensionality_)
-      d = self.last_x(p1).subtract(self.last_x(p2))
-      return d.multiply(Simulation._ka_/ (d.magnitude * d.magnitude))
+      else:
+        si = 0 # si is the edgeweight(similarity index) between two neighbouring particles #
+        for n, w in self._graph_.nodes[p1]: 
+      	  if p2 == n:
+            si = w
+	for n, w in self._graph_.nodes[p2]:
+          if p1 == n:
+            si = w
+
+      d = self.last_x(p2).subtract(self.last_x(p1))
+      if(d.magnitude==0):  
+        return Vector.zero_vector(self._dimensionality_) # if the two particles in question are co-inciding; attractive force between them should be zero #
+ 
+      return d.unit_vector.multiply(si*self._ka_/ (d.magnitude**self._degree_ + 0.01)) #softening the attraction# 
 
     # force felt by p1 from p2 due to electrostatic repulsion
     def repulsive_force(p1, p2):
