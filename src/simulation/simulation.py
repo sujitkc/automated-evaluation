@@ -7,6 +7,9 @@ import math
 import random
 import csv
 
+input_pos=[[4,6],[3,5],[4,4],[5,5],[9,9],[8,7],[10,7]] # hardcoded starting positions #
+
+
 class Vector:
 
   def __init__(self, xs):
@@ -99,15 +102,17 @@ class Simulation:
   # INITIALISATION
   # Place all the node particles in different randomly generated coordinates.
   # The initial velocities will be 0 for all particles.
+    key_ind=0
     for p in self._snapshots_:
-      new_x = Vector.random_vector(self._dimensionality_, self._boundary_)
+      new_x = Vector(input_pos[key_ind])
+      # Vector.random_vector(self._dimensionality_, self._boundary_) #
       while(self.is_colliding(new_x, p)):
         new_x = Vector.random_vector(self._dimensionality_, self._boundary_)
-      s = Snapshot( new_x,
-                    Vector.zero_vector(self._dimensionality_),
-                    Vector.zero_vector(self._dimensionality_)          )
+      s = Snapshot( new_x, Vector.zero_vector(self._dimensionality_), Vector.zero_vector(self._dimensionality_) )
       self._snapshots_[p].append(s)
-  
+      key_ind+=1
+    
+    # finding intial acceleration of all particles	 
     for p in self._snapshots_:
       s.set_a(self.acceleration(p))
 
