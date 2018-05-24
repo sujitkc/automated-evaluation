@@ -148,9 +148,17 @@ class Simulation:
       if(d.magnitude==0):  
         return Vector.zero_vector(self._dimensionality_) # if the two particles in question are co-inciding; attractive force between them should be zero #
  
-      return d.unit_vector.multiply(si*self._ka_/ (d.magnitude**self._degree_ + 0.01)) #softening the attraction# 
+      return d.unit_vector.multiply(si*self._ka_/ (d.magnitude**self._degree_ + 0.01)) # softening the attraction # 
+    
+    # force felt by p1 from p2 due to electrostatic repulsion
+    def repulsive_force(p1, p2):
+      d = self.last_x(p1).subtract(self.last_x(p2))
+      if(d.magnitude==0):  
+        return Vector.zero_vector(self._dimensionality_) # if the two particles in question are co-inciding; attractive force between them should be zero #
+ 
+      return d.unit_vector.multiply(self._kr_ / (d.magnitude**self._degree_ + 0,01)) # softening the repulsion #
 
-    # frictional force felt by p due to its momentum; accounting for kinetic friction #
+    # frictional force felt by p due to its momentum; accounting for kinetic friction ; low-speed viscous drag considered as Re < 1 considered for particles #
     def frictional_force(p1):
       return self.last_v(p1).multiply(-self._kf_)
 
@@ -171,8 +179,7 @@ class Simulation:
     new_temp=[]
     for p in self._snapshots_.keys():
       new_v = self.last_v(p).add(self.last_a(p).multiply(self._timestep_)) # new_v = old_v + (old_a*delta(t)) #
-      tmp_x = self.last_x(p).add(new_v.multiply(self._timestep_))          # new_x = old_x + (old_v*delta(t)) #
-      new_x = tmp_x.multiply(self._kr_)                                    # costant metric scaling gives a sense of universal repulsion #
+      new_x = self.last_x(p).add(new_v.multiply(self._timestep_))          # new_x = old_x + (old_v*delta(t)) #
       
       s = Snapshot(new_x, new_v, Vector.zero_vector(self._dimensionality_))
       new_acc = self.acceleration(p) 
