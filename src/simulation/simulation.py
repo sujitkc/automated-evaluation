@@ -93,10 +93,6 @@ class Snapshot:
 
 class Simulation:
 
-  _kr_ = 1
-  _ka_ = 1
-  _kf_ = 1
-
   def __init__(self, g, d, b, r, a, f, degree):
     self._graph_          = g
     self._dimensionality_ = d
