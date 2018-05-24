@@ -105,6 +105,7 @@ class Simulation:
     for n in self._graph_.nodes.keys():
       self._snapshots_[n] = []
     self._timestep_ = 0.1   # fixed number #
+    self._static_friction_ = 0.01 # fixed number #
 
   # INITIALISATION
   # Place all the node particles in different randomly generated coordinates.
@@ -154,7 +155,7 @@ class Simulation:
     def repulsive_force(p1, p2):
       d = self.last_x(p1).subtract(self.last_x(p2))
       if(d.magnitude==0):  
-        return Vector.zero_vector(self._dimensionality_) # if the two particles in question are co-inciding; attractive force between them should be zero #
+        return Vector.zero_vector(self._dimensionality_) # if the two particles in question are co-inciding; repulsive force between them should be zero #
  
       return d.unit_vector.multiply(self._kr_ / (d.magnitude**self._degree_ + 0,01)) # softening the repulsion #
 
@@ -166,7 +167,11 @@ class Simulation:
     for p in self._snapshots_.keys():
       if(p != particle):
         mutual_force = mutual_force.add(attractive_force(particle, p))
-    return mutual_force.add(frictional_force(particle)) 
+    if(frictional_force(particle)==Vector.zero_vector(self._dimensionality_)): # if kinetic friction = 0 then static friction takes over #
+      sf = mutual_force.unit_vecor.multiply(self._static_friction_)
+      return mututal_force.add(sf)
+    else:
+      return mutual_force.add(frictional_force(particle)) 
 
   def is_colliding(self, x, particle):
     for p in self._snapshots_.keys():
