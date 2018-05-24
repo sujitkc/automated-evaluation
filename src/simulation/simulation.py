@@ -49,7 +49,7 @@ class Vector:
     return Vector(v)
 
   def __str__(self):
-    return reduce(lambda x, y: x + str(y) + ", ", self.X[1:], str(self.X[0]))
+    return reduce(lambda x, y: x + "/" + str(y) , self.X[1:], str(self.X[0]))
 #    return "Vector(" + s + ")"
 
   @property
