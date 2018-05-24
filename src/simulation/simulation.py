@@ -108,6 +108,7 @@ class Simulation:
     self._degree_ = degree
     for n in self._graph_.nodes.keys():
       self._snapshots_[n] = []
+    self._timestep_ = 0.1   # fixed number #
 
   # INITIALISATION
   # Place all the node particles in different randomly generated coordinates.
@@ -153,11 +154,6 @@ class Simulation:
  
       return d.unit_vector.multiply(si*self._ka_/ (d.magnitude**self._degree_ + 0.01)) #softening the attraction# 
 
-    # force felt by p1 from p2 due to electrostatic repulsion
-    def repulsive_force(p1, p2):
-      d = self.last_x(p1).subtract(self.last_x(p2))
-      return d.unit_vector.multiply(-Simulation._kr_ / (d.magnitude * d.magnitude))
-
     # frictional force felt by p due to its momentum; accounting for kinetic friction #
     def frictional_force(p1):
       return self.last_v(p1).multiply(-self._kf_)
@@ -175,22 +171,27 @@ class Simulation:
           return True
     return False
   
-  def single_step(self, i):
+  def single_step(self):
+    new_temp=[]
     for p in self._snapshots_.keys():
-      new_v = self.last_v(p).add( self.last_a(p).multiply(0.5) )
-      new_x = self.last_x(p).add(self.last_a(p).multiply(((2 * i) - 1) / 2))
-      while(self.is_colliding(new_x, p)):
-        new_x = new_x.add(self.last_v(p).unit_vector)
-      s = Snapshot(new_x, new_v, Vector.zero_vector(self._dimensionality_));
-      self._snapshots_[p].append(s)
-      s.set_a(self.acceleration(p))
+      new_v = self.last_v(p).add(self.last_a(p).multiply(self._timestep_)) # new_v = old_v + (old_a*delta(t)) #
+      tmp_x = self.last_x(p).add(new_v.multiply(self._timestep_))          # new_x = old_x + (old_v*delta(t)) #
+      new_x = tmp_x.multiply(self._kr_)                                    # costant metric scaling gives a sense of universal repulsion #
+      
+      s = Snapshot(new_x, new_v, Vector.zero_vector(self._dimensionality_))
+      new_acc = self.acceleration(p) 
+      s.set_a(new_acc)
+      new_temp.append(s)
+    
+    i=0
+    for p in self._snapshots_.keys():
+      self._snapshots_[p].append(new_temp[i])
+      i+=1
       
   def simulate(self, n):
-    for i in range(n):
-      self.single_step(i)
-    for p in self._snapshots_:
-      print p + ": " + "[" + reduce(lambda x, y: x + ",\n  " + str(y), self._snapshots_[p], "") + "\n]"
-
+    for i in range(1,n):
+      self.single_step()
+    
   # dumps the x values into a CSV file
   def to_csv(self, filename):
     with open(filename, 'wb') as csvfile:
