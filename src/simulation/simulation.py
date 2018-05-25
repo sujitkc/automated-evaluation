@@ -105,7 +105,7 @@ class Simulation:
       self._snapshots_[n] = []
     self._timestep_ = 0.1   # fixed number #
     self._static_friction_ = 0.01 # fixed number #
-
+    self._velocity_cutoff_ = 0.01 # fixed number #	
   # INITIALISATION
   # Place all the node particles in different randomly generated coordinates.
   # The initial velocities will be 0 for all particles.
@@ -187,8 +187,10 @@ class Simulation:
   def single_step(self):
     new_temp=[]
     for p in self._snapshots_.keys():
-      new_v = self.last_v(p).add(self.last_a(p).multiply(self._timestep_)) # new_v = old_v + (old_a*delta(t)) #
-      new_x = self.last_x(p).add(new_v.multiply(self._timestep_))          # new_x = old_x + (old_v*delta(t)) #
+      new_v = Vector.zero_vector(self._dimensionality_)
+      if( self.last_v(p).add(self.last_a(p).multiply(self._timestep_)).magnitude >= self._velocity_cutoff_):
+        new_v =  self.last_v(p).add(self.last_a(p).multiply(self._timestep_))         # new_v = old_v + (old_a*delta(t)) #
+      new_x = self.last_x(p).add(new_v.multiply(self._timestep_))                     # new_x = old_x + (old_v*delta(t)) #
       
       s = Snapshot(new_x, new_v, Vector.zero_vector(self._dimensionality_))
       new_acc = self.acceleration(p) 
