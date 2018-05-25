@@ -50,7 +50,6 @@ class Vector:
 
   def __str__(self):
     return reduce(lambda x, y: x + "/" + str(y) , self.X[1:], str(self.X[0]))
-#    return "Vector(" + s + ")"
 
   @property
   def neg(self): return Vector([-x for x in self.X])
@@ -157,7 +156,7 @@ class Simulation:
       if(d.magnitude==0):  
         return Vector.zero_vector(self._dimensionality_) # if the two particles in question are co-inciding; repulsive force between them should be zero #
  
-      return d.unit_vector.multiply(self._kr_ / (d.magnitude**self._degree_ + 0,01)) # softening the repulsion #
+      return d.unit_vector.multiply(self._kr_ / (d.magnitude**self._degree_ + 0.01)) # softening the repulsion #
 
     # frictional force felt by p due to its momentum; accounting for kinetic friction ; low-speed viscous drag considered as Re < 1 considered for particles #
     def frictional_force(p1):
@@ -166,13 +165,18 @@ class Simulation:
     mutual_force = Vector.zero_vector(self._dimensionality_)
     for p in self._snapshots_.keys():
       if(p != particle):
-        mutual_force = mutual_force.add(attractive_force(particle, p))
-    if(frictional_force(particle)==Vector.zero_vector(self._dimensionality_)): # if kinetic friction = 0 then static friction takes over #
-      sf = mutual_force.unit_vecor.multiply(self._static_friction_)
-      return mututal_force.add(sf)
+        mutual_force = mutual_force.add(attractive_force(particle, p).add(repulsive_force(particle,p)))
+    if(self.last_v(particle) == 0):                         # when particle is stationary; static friction is present #
+      if(mutual_force.magnitude > self._static_friction_):
+        sf = mutual_force.unit_vecor.multiply(-self._static_friction_)
+        mutual_force = mutual_force.add(sf)
+        return mututal_force.add(sf)
+      else:
+        return Vector.zero_vector(self._dimensionality_) 
+    
     else:
-      return mutual_force.add(frictional_force(particle)) 
-
+      return mutual_force.add(frictional_force(particle))    # when particle is moving; drag is present #
+  
   def is_colliding(self, x, particle):
     for p in self._snapshots_.keys():
       if(len(self._snapshots_[p]) != 0 and p != particle):
