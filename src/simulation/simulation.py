@@ -121,7 +121,7 @@ class Simulation:
     
     # finding intial acceleration of all particles	 
     for p in self._snapshots_:
-      s.set_a(self.acceleration(p))
+      self._snapshots_[p][0].set_a(self.acceleration(p))
 
   def last_x(self, p): return self._snapshots_[p][len(self._snapshots_[p]) - 1]._x_
 
@@ -193,15 +193,15 @@ class Simulation:
       new_x = self.last_x(p).add(new_v.multiply(self._timestep_))                     # new_x = old_x + (old_v*delta(t)) #
       
       s = Snapshot(new_x, new_v, Vector.zero_vector(self._dimensionality_))
-      new_acc = self.acceleration(p) 
-      s.set_a(new_acc)
       new_temp.append(s)
     
     i=0
     for p in self._snapshots_.keys():
       self._snapshots_[p].append(new_temp[i])
       i+=1
-      
+    for p in self._snapshots_:  # update accelration; done after new_x and new_v have beencalculated for all the nodes #
+      self._snapshots_[p][-1].set_a(self.acceleration(p))
+   
   def simulate(self, n):
     for i in range(1,n):
       self.single_step()
