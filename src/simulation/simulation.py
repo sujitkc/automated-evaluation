@@ -7,7 +7,8 @@ import math
 import random
 import csv
 
-input_pos=[[4,6],[3,5],[4,4],[5,5],[9,9],[8,7],[10,7]] # hardcoded starting positions #
+#input_pos=[[4,6],[3,5],[4,4],[5,5],[9,9],[8,7],[10,7]] # hardcoded starting positions #
+input_pos=[[10,0],[-10,0]]
 
 # generator
 def drange(start, stop, step):
@@ -92,7 +93,7 @@ class Snapshot:
 
 class Simulation:
 
-  def __init__(self, g, d, b, r, a, f, degree):
+  def __init__(self, g, d, b, f, r, a, degree):
     self._graph_          = g
     self._dimensionality_ = d
     self._boundary_       = b
@@ -103,9 +104,9 @@ class Simulation:
     self._degree_ = degree
     for n in self._graph_.nodes.keys():
       self._snapshots_[n] = []
-    self._timestep_ = 0.1   # fixed number #
-    self._static_friction_ = 0.01 # fixed number #
-    self._velocity_cutoff_ = 0.01 # fixed number #	
+    self._timestep_ = 0.1   		# fixed number #
+    self._static_friction_ = 0.0001 	# fixed number #
+    self._velocity_cutoff_ = 0.00001 	# fixed number #	
   # INITIALISATION
   # Place all the node particles in different randomly generated coordinates.
   # The initial velocities will be 0 for all particles.
@@ -148,7 +149,7 @@ class Simulation:
       if(d.magnitude==0):  
         return Vector.zero_vector(self._dimensionality_) # if the two particles in question are co-inciding; attractive force between them should be zero #
  
-      return d.unit_vector.multiply(si*self._ka_/ (d.magnitude**self._degree_ + 0.01)) # softening the attraction # 
+      return d.unit_vector.multiply(si*self._ka_/ (d.magnitude**self._degree_ + 0.1)) # softening the attraction # 
     
     # force felt by p1 from p2 due to electrostatic repulsion
     def repulsive_force(p1, p2):
@@ -156,7 +157,7 @@ class Simulation:
       if(d.magnitude==0):  
         return Vector.zero_vector(self._dimensionality_) # if the two particles in question are co-inciding; repulsive force between them should be zero #
  
-      return d.unit_vector.multiply(self._kr_ / (d.magnitude**self._degree_ + 0.01)) # softening the repulsion #
+      return d.unit_vector.multiply(self._kr_ / (d.magnitude**self._degree_ + 0.1)) # softening the repulsion #
 
     # frictional force felt by p due to its momentum; accounting for kinetic friction ; low-speed viscous drag considered as Re < 1 considered for particles #
     def frictional_force(p1):
@@ -356,37 +357,37 @@ def t3():
   simulation.simulate(100)
   simulation.to_csv("output.csv")
  
-def t4(dim,r,a,f,degree):
+def t4(dim,f,r,a,degree):
   g = G.Graph.empty_graph()
   edge_list = [
     G.Edge("n1", 1, "n2"),
-    G.Edge("n1", 1, "n3"),
-    G.Edge("n1", 1, "n4"),
-    G.Edge("n2", 1, "n3"),
-    G.Edge("n2", 1, "n4"),
-    G.Edge("n3", 1, "n4"),
-    G.Edge("n5", 1, "n6"),
-    G.Edge("n5", 1, "n7"),
-    G.Edge("n6", 1, "n7"),
-    G.Edge("n4", 1, "n6")
+    #G.Edge("n1", 1, "n3"),
+    #G.Edge("n1", 1, "n4"),
+    #G.Edge("n2", 1, "n3"),
+    #G.Edge("n2", 1, "n4"),
+    #G.Edge("n3", 1, "n4"),
+    #G.Edge("n5", 1, "n6"),
+    #G.Edge("n5", 1, "n7"),
+    #G.Edge("n6", 1, "n7"),
+    #G.Edge("n4", 1, "n6")
  ]
 
   g.add_edge_list(edge_list)
 
-  simulation = Simulation(g, dim, 100, r, a, f, degree)
+  simulation = Simulation(g, dim, 100, f, r, a, degree)
   simulation.simulate(2000)
-  file1 = "simulate-csv/degree-"+str(degree)+"/dim-"+str(dim)+"/timestep-"+"0.1"+"/output-t4_" + str(r)+"_"+str(a)+"_"+str(f)+".csv"
+  file1 = "simulate-csv/degree-"+str(degree)+"/dim-"+str(dim)+"/timestep-"+"0.1"+"/output-2/" + str(f)+"_"+str(r)+"_"+str(a)+".csv"
   simulation.to_csv(file1)
  
 if __name__ == "__main__":
 	degree = 2
 	dim = 2
-	for x in drange(1,2,0.1):
-		for y in drange(x,2,0.1):
-			for z in drange(0,min(x,y),0.1):
-				r = float(x)
-				a = float(y)
-				f = float(z)
-				print r,a,f  				
-				t4(dim, r,a,f,degree)
+	for x in drange(0,101,1):
+		for y in drange(0,101,1):
+			for z in drange(0,101,1):
+				f = float(x)
+				r = float(y)
+				a = float(z)
+				print f,r,a  				
+				t4(dim,f,r,a,degree)
 	
