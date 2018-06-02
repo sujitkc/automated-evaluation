@@ -8,7 +8,8 @@ import random
 import csv
 
 #input_pos=[[4,6],[3,5],[4,4],[5,5],[9,9],[8,7],[10,7]] # hardcoded starting positions #
-input_pos=[[10,0],[-10,0]]
+input_pos=[[5,0],[-5,0]]
+#input_pos=[[5,0],[-2.5,4.33],[-2.5,-4.33]]
 
 # generator
 def drange(start, stop, step):
@@ -207,14 +208,18 @@ class Simulation:
     for i in range(1,n):
       self.single_step()
     
-  # dumps the x values into a CSV file
+  # dumps the x,v,a values into a CSV file
   def to_csv(self, filename):
     with open(filename, 'wb') as csvfile:
       writer = csv.writer(csvfile, delimiter=',')
       for p in self._snapshots_:
-        xs = [p] + [str(s.position) for s in self._snapshots_[p]]
-        writer.writerow(xs)
-
+        x = [p] + [str(s.position) for s in self._snapshots_[p]]
+        writer.writerow(x)
+	v = [p] + [str(s.velocity) for s in self._snapshots_[p]]
+        writer.writerow(v)
+	a = [p] + [str(s.acceleration) for s in self._snapshots_[p]]
+        writer.writerow(a)
+	
 def t1():
   v1 = Vector([1, 2])
   v2 = Vector([2, 3])
@@ -371,23 +376,24 @@ def t4(dim,f,r,a,degree):
     #G.Edge("n6", 1, "n7"),
     #G.Edge("n4", 1, "n6")
  ]
-
+  #print str(f)+str(r)+str(a)
   g.add_edge_list(edge_list)
 
   simulation = Simulation(g, dim, 100, f, r, a, degree)
-  simulation.simulate(2000)
+  simulation.simulate(6000)
   file1 = "simulate-csv/degree-"+str(degree)+"/dim-"+str(dim)+"/timestep-"+"0.1"+"/output-2/" + str(f)+"_"+str(r)+"_"+str(a)+".csv"
   simulation.to_csv(file1)
  
 if __name__ == "__main__":
 	degree = 2
 	dim = 2
-	for x in drange(0,101,1):
-		for y in drange(0,101,1):
-			for z in drange(0,101,1):
+	for x in drange(1,11,1):
+		for y in drange(0,11,1):
+			for z in drange(y,11,1):
 				f = float(x)
 				r = float(y)
 				a = float(z)
 				print f,r,a  				
 				t4(dim,f,r,a,degree)
 	
+	#t4(dim,0.0,0.0,10.0,degree)
