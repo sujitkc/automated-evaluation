@@ -2,10 +2,12 @@ import csv
 import glob
 import sys
 import hdbscan
+from matplotlib import pyplot as plt
+
 
 csv.field_size_limit(sys.maxsize)
 
-for doc in glob.glob('simulate-csv/degree-2/dim-2/timestep-0.1/output-7/3.0_4.0_5.0.csv'): #"output_test.csv"):#
+for doc in glob.glob('simulate-csv/degree-2/dim-2/timestep-0.1/output-10/3.0_4.0_5.0.csv'): #"output_test.csv"):#
 	data=[]
 	print doc
 	with open(doc, 'rb') as csvfile:
@@ -43,7 +45,9 @@ for doc in glob.glob('simulate-csv/degree-2/dim-2/timestep-0.1/output-7/3.0_4.0_
 					
 		points.append([x,y])
 	#print points[0][1][0]
-	for i in range(0,len(nodes_r['n1'])-1980,1):
+	seperation_values = []
+	cohesion_values = []
+	for i in range(00,len(nodes_r['n1']),100):
 		snapshot_points = []
 		for j in range(0,len(points)):
 			snapshot_points.append( [ points[j][0][i] , points[j][1][i] ] )
@@ -53,21 +57,63 @@ for doc in glob.glob('simulate-csv/degree-2/dim-2/timestep-0.1/output-7/3.0_4.0_
 		
 		print "Step Number : " + str(i)
 		print clusterer.labels_
-		
-		# cluster seperation calculations #
+		#print snapshot_points
+		# cluster seperation-cohesion calculations #
 		c_num = clusterer.labels_.max() + 1 	# no of clusters formed #
 		n_num = 0				# no of outliers #
 		for e in clusterer.labels_:
-			if e==1:
+			if e==-1:
 				n_num=n_num+1
-
-		cluster_points = {}			# contains positions of data points grouped as per cluster #
+		clusters = {}				# contains positions of data points grouped by cluster label#
+		centers = [0]*(c_num+n_num)		# contains poistions of cluster centers and outlier positions #
+		k = 0					# controls index of 'centers' #
 		for i in range(-1,c_num):
-			cluster_points[i]=[]			
-			j=0		
-			for e in clusterer.labels_:
-				if e==i:
-					cluster_points[i].append(snapshot_points[j])
-				j=j+1
-		print cluster_points
+			clusters[i]=[]
+			if i != -1:			# finds cluster centers #		
+				j=0
+				center_x=[]
+				center_y=[]
+				for e in clusterer.labels_:
+					if e==i:
+						center_x.append(snapshot_points[j][0])
+						center_y.append(snapshot_points[j][1])
+						clusters[i].append( [snapshot_points[j][0],snapshot_points[j][1]] )
+					j=j+1
+				centers[k] = [ (sum(center_x)/float(len(center_x))) , (sum(center_y)/float(len(center_y))) ]
+				k=k+1
+			else:				# adds outliers as it is #
+				j=0				
+				for e in clusterer.labels_:
+					if e==i:
+						centers[k] = [ snapshot_points[j][0] , snapshot_points[j][1] ]
+						clusters[i].append( [snapshot_points[j][0],snapshot_points[j][1]] )
+						k=k+1						
+					j=j+1
+		seperation = 0	
+		for i in range(0,len(centers)):
+			for j in range(i+1,len(centers)):
+				seperation = seperation + ( ((centers[i][0]-centers[j][0])**2) + ((centers[i][1]-centers[j][1])**2) )**0.5 
+		seperation_values.append(seperation)
+		print clusters
+		
+		cohesion = 0
+		
+		for cluster in clusters:
+			if(cluster==-1):
+				for i in range(0,len(clusters[cluster])):
+						cohesion = cohesion + ( (clusters[cluster][i][0]**2) + (clusters[cluster][i][1]**2) )**0.5 
+			else:
+				for i in range(0,len(clusters[cluster])):
+					for j in range(i+1,len(clusters[cluster])):
+						cohesion = cohesion + ( ((clusters[cluster][i][0]-clusters[cluster][j][0])**2) + ((clusters[cluster][i][1]-clusters[cluster][j][1])**2) )**0.5 
+		cohesion_values.append(cohesion)
+		print cohesion_values[-1]
 		print "\n"
+		
+	plt.subplot(2,1,1)	
+	plt.plot(seperation_values,':')
+	plt.subplot(2,1,2)
+	plt.plot(cohesion_values,':')
+	plt.show()	
+	plt.close()
+		
