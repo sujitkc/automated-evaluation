@@ -6,17 +6,29 @@ import graph as G
 import math
 import random
 import csv
+import hdbscan
+import numpy as np
+from matplotlib import pyplot as plt
 
-#input_pos=[[4,6],[3,5],[4,4],[5,5],[9,9],[8,7],[10,7]] # hardcoded starting positions #
-input_pos=[[5,0],[-5,0]]
+#input_pos=[[5,0],[-5,0]]
 #input_pos=[[5,0],[-2.5,4.33],[-2.5,-4.33]]
+#input_pos=[[5,0],[0,5],[-5,0],[0,-5]]
+input_pos=[[4.29583523987,3.83683406432],[4.92562756335,4.86005461296],[3.21439070921,4.236325461],[0.127014150292,-4.89076061297],[3.22026991339,1.47522298923],[2.16286082227,1.25997103708],[4.32061587194,3.38473137874],[0.0811084308883,2.76575195045],[0.280914008349,2.06911478313],[2.14989768887,3.05996808334]]
 
-# generator
+
+################ GENERATOR ######################
 def drange(start, stop, step):
 	r = start
 	while r < stop:
 		yield r
 		r += step
+
+
+
+
+
+
+################ CLASS VECTOR ###################
 
 class Vector:
 
@@ -70,6 +82,13 @@ class Vector:
   # Give a new vector multiplying self by multiplier k
   def multiply(self, k): return Vector([k * x for x in self.X])
 
+
+
+
+
+
+############### CLASS SNAPSHOT ################
+
 class Snapshot:
   def __init__(self, x, v, a):
     self._x_ = x
@@ -91,6 +110,16 @@ class Snapshot:
 
   def __str__(self):
     return "Snapshot(\n" + "    x = " + str(self._x_) + "\n    v = " + str(self._v_) + "\n    a = " + str(self._a_) + ")" 
+
+
+
+
+
+
+
+
+
+################ CLASS SIMULATION ######################
 
 class Simulation:
 
@@ -114,7 +143,7 @@ class Simulation:
     key_ind=0
     for p in self._snapshots_:
       new_x = Vector(input_pos[key_ind])
-      # Vector.random_vector(self._dimensionality_, self._boundary_) #
+      #new_x = Vector.random_vector(self._dimensionality_, self._boundary_) #
       while(self.is_colliding(new_x, p)):
         new_x = Vector.random_vector(self._dimensionality_, self._boundary_)
       s = Snapshot( new_x, Vector.zero_vector(self._dimensionality_), Vector.zero_vector(self._dimensionality_) )
@@ -205,8 +234,10 @@ class Simulation:
       self._snapshots_[p][-1].set_a(self.acceleration(p))
    
   def simulate(self, n):
-    for i in range(1,n):
+    for i in range(1,n+1):
       self.single_step()
+      if i%5 == 0:
+        check(self,i)		# calls to check whether the simulation needs to be stopped #
     
   # dumps the x,v,a values into a CSV file
   def to_csv(self, filename):
@@ -219,6 +250,15 @@ class Simulation:
         writer.writerow(v)
 	a = [p] + [str(s.acceleration) for s in self._snapshots_[p]]
         writer.writerow(a)
+
+
+
+
+
+
+
+
+################# SAMPLE GRAPHS ###################
 	
 def t1():
   v1 = Vector([1, 2])
@@ -366,27 +406,160 @@ def t4(dim,f,r,a,degree):
   g = G.Graph.empty_graph()
   edge_list = [
     G.Edge("n1", 1, "n2"),
-    #G.Edge("n1", 1, "n3"),
-    #G.Edge("n1", 1, "n4"),
-    #G.Edge("n2", 1, "n3"),
-    #G.Edge("n2", 1, "n4"),
-    #G.Edge("n3", 1, "n4"),
-    #G.Edge("n5", 1, "n6"),
-    #G.Edge("n5", 1, "n7"),
-    #G.Edge("n6", 1, "n7"),
-    #G.Edge("n4", 1, "n6")
- ]
+    G.Edge("n1", 1, "n3"),
+    G.Edge("n1", 1, "n4"),
+    G.Edge("n2", 1, "n3"),
+    G.Edge("n2", 1, "n4"),
+    G.Edge("n3", 1, "n4"),
+    G.Edge("n5", 1, "n6"),
+    G.Edge("n5", 1, "n7"),
+    G.Edge("n6", 1, "n7"),
+    G.Edge("n8", 1, "n9"),
+    G.Edge("n8", 1, "n10"),
+    G.Edge("n9", 1, "n10")
+    ]
   #print str(f)+str(r)+str(a)
   g.add_edge_list(edge_list)
+  #print g.nodes
+  initialisation(g)
+  simulation = Simulation(g, dim, 5, f, r, a, degree)
+  simulation.simulate(2000)
+  file1 = "simulate-csv/degree-"+str(degree)+"/dim-"+str(dim)+"/timestep-"+"0.1"+"/output-10/" + str(f)+"_"+str(r)+"_"+str(a)+".csv"
+  #simulation.to_csv(file1)
 
-  simulation = Simulation(g, dim, 100, f, r, a, degree)
-  simulation.simulate(6000)
-  file1 = "simulate-csv/degree-"+str(degree)+"/dim-"+str(dim)+"/timestep-"+"0.1"+"/output-2/" + str(f)+"_"+str(r)+"_"+str(a)+".csv"
-  simulation.to_csv(file1)
- 
+
+
+
+
+
+
+
+
+
+
+################## STOPPING ALGORITHM ####################
+
+# DICTIONARY TO TRACK ALL THE SNAPSHOTS OF ALL THE NODES #
+nodes_r={}			# key=node; value=list(snapshots(x)) :: tracks position #
+nodes_v={}			# key=node; value=list(snapshots(v)) :: tracks velocity #
+nodes_a={}			# key=node; value=list(snapshots(a)) :: tracks acceleration #
+
+separation_values = []		# tracks cluster separation value at each check step #
+cohesion_values = []		# tracks cluster cohesion value at each check step #
+check_points = []		# tracks step value at which checks were performed #
+variance = []			# tracks variance values at each step #
+F1 = []				# tracks flag_s values at each step #
+F2 = []				# tracks flag_c values at each step #
+
+# when F1[index] and F2[index] = True we can then safely stop the simulation #
+	
+def initialisation(g):			#initialising empty lists of r,v,a for each node in the position,velocity and acceleration dictionary #
+	for n in g.nodes.keys():
+      		nodes_r[n] = []			
+		nodes_v[n] = []
+		nodes_a[n] = []
+	
+def check(obj_simulation,index):
+  	check_points.append(index)
+	for p in obj_simulation._snapshots_:
+		nodes_r[p].append(obj_simulation.last_x(p).X)
+		nodes_v[p].append(obj_simulation.last_v(p).X)
+		nodes_a[p].append(obj_simulation.last_a(p).X)
+	
+	# pulling out points for the clustering algorithm #
+	snapshot_points = []
+	for p in nodes_r:
+		snapshot_points.append(nodes_r[p][-1])
+	
+	clusterer = hdbscan.HDBSCAN(min_cluster_size=2)		# HDBSCAN USED FOR CLUSTERING #
+	clusterer.fit(snapshot_points)
+	print "Step Number : " + str(index)
+	print clusterer.labels_
+	
+	# cluster separation & cohesion calculations #
+	c_num = clusterer.labels_.max() + 1 	# no of clusters formed #
+	n_num = 0				# no of outliers #
+	for e in clusterer.labels_:
+			if e==-1:
+				n_num=n_num+1
+	
+	clusters = {}				# contains positions of data points grouped by cluster label#
+	centers = [0]*(c_num+n_num)		# contains poistions of cluster centers and outlier positions #
+	k = 0					# controls index of 'centers' #
+	for i in range(-1,c_num):
+		clusters[i]=[]
+		if i != -1:			# finds cluster centers #		
+			j=0
+			center_x=[]
+			center_y=[]
+			for e in clusterer.labels_:
+				if e==i:
+					center_x.append(snapshot_points[j][0])
+					center_y.append(snapshot_points[j][1])
+					clusters[i].append( [snapshot_points[j][0],snapshot_points[j][1]] )
+				j=j+1
+			centers[k] = [ (sum(center_x)/float(len(center_x))) , (sum(center_y)/float(len(center_y))) ]
+			k=k+1
+		else:				# adds outliers as it is #
+			j=0				
+			for e in clusterer.labels_:
+				if e==i:
+					centers[k] = [ snapshot_points[j][0] , snapshot_points[j][1] ]
+					clusters[i].append( [snapshot_points[j][0],snapshot_points[j][1]] )
+					k=k+1						
+				j=j+1
+	
+	
+	separation = 0				# calculate cluster separation #
+	for i in range(0,len(centers)):
+		for j in range(i+1,len(centers)):
+			separation = separation + ( ((centers[i][0]-centers[j][0])**2) + ((centers[i][1]-centers[j][1])**2) )**0.5 
+	separation_values.append(separation)
+	
+	cohesion = 0				# calculate cluster cohesion #
+	for cluster in clusters:	
+		if(cluster==-1):
+			for i in range(0,len(clusters[cluster])):
+					cohesion = cohesion + ( (clusters[cluster][i][0]**2) + (clusters[cluster][i][1]**2) )**0.5 
+		else:
+			'''			
+			for i in range(0,len(clusters[cluster])):
+				for j in range(i+1,len(clusters[cluster])):
+					cohesion = cohesion + ( ((clusters[cluster][i][0]-clusters[cluster][j][0])**2) + ((clusters[cluster][i][1]-clusters[cluster][j][1])**2) )**0.5 
+			'''
+			for i in range(i,len(clusters[cluster])):
+				cohesion = cohesion + ( ((clusters[cluster][i][0]-centers[n_num+cluster][0])**2) + ((clusters[cluster][i][1]-centers[n_num+cluster][1])**2) )**0.5 
+				
+	cohesion_values.append(cohesion)
+			
+	# CHECKS TO SEE IF WE HAVE REACHED THE STOPPING POINT #
+	if len(separation_values) >= 50 :		# taking 50 check points for stablitiy consideration(250 in total); smaller points considered then faster is the stopping algo #
+		f=np.array(separation_values[-50:],dtype=float)
+		flag1 = all(f[i]<=f[i+1] for i in range(len(f)-1))
+		gradient = np.gradient(f,5)		# difference between 2 consecutive check points = 5 units #
+		flag2 = all(gradient[i]>=gradient[i+1] for i in range(len(gradient)-1))
+		flag_s = flag1 and flag2
+		F1.append(flag_s)			
+	else:
+		F1.append(False)
+
+
+	if len(cohesion_values) >= 50 :
+		f=np.array(cohesion_values[-50:],dtype=float)
+		var = np.var(f)	
+		variance.append(var)		
+		flag_c = all(e<0.5 for e in variance[-100:])
+		F2.append(flag_c) 
+	else:
+		variance.append(1)
+		F2.append(False)	
+	print "\n"
+
+	
 if __name__ == "__main__":
 	degree = 2
 	dim = 2
+	'''	
 	for x in drange(1,11,1):
 		for y in drange(0,11,1):
 			for z in drange(y,11,1):
@@ -395,5 +568,20 @@ if __name__ == "__main__":
 				a = float(z)
 				print f,r,a  				
 				t4(dim,f,r,a,degree)
-	
+	'''
+	t4(dim,3.0,4.0,5.0,degree)
+	plt.subplot(3,1,1)	
+	plt.plot(check_points,separation_values,'.')
+	plt.plot(check_points,separation_values)
+	plt.subplot(3,1,2)
+	plt.plot(check_points,cohesion_values,'.')
+	plt.plot(check_points,cohesion_values)
+	plt.subplot(3,1,3)	
+	#plt.plot(check_points,F1,'.')
+	plt.plot(check_points,F1)	
+	#plt.plot(check_points,F2,'.')
+	plt.plot(check_points,F2)
+		
+	plt.show()	
+	plt.close()
 	#t4(dim,0.0,0.0,10.0,degree)
