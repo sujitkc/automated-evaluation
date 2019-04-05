@@ -1,5 +1,7 @@
 \documentclass{article}
 
+\usepackage{listings}
+
 \title{Automated Evaluation of Programming Assignments -- An Experience Report}
 \author{Sujit Kumar Chakrabarti, Shilpi Banerjee}
 \date{}
@@ -27,7 +29,24 @@ Because of the issues listed above in existing platforms, we decided to device o
 \item A methodology of designing questions based on learning objectives
 \item A discipline of designing test cases which test what we wish to assess.
 \end{enumerate}
-\section{Types of Test Cases}
+
+\subsection{Structural questions}
+Some test cases may need to check static aspects of the program. Some of these can be dynamically checked through a cleverly designed test case. However, in general, such features are not open to be tested dynamically, but have to be checked by performing static analysis of the source code. For example: Is class $A$ a base class of class $B$? Does class $B$ override method $m$ defined in its base class $A$? and so on. Designing test cases to check such aspects may be easy when the programming language in question provides reflection features (e.g. Java, Python). However, in absence of reflection (e.g. C), checking such features may require access to a parser infrastructure for the language.
+
+\section{Designing Questions}
+An important objective of introductory programming courses is to introduce students to basic programming constructs (e.g. branches, loops, functions, recursion, classes and inheritance), and preliminary application of these to solve \emph{very simple} computing problems. These courses stop short of teaching more advanced program design concepts, e.g. data-structure and algorithm design, which are covered in later courses. This results in a fairly regimented nature of what can be asked and how these questions can be answered. The level of abstraction of questions focuses primarily on programming constructs and not on program design. For example, if a question is about implementation of the factorial function, it will mostly be specified if the solution should use iteration or recursion. Note that the objective of such a question would be to test whether the student has understood such programming concepts as loops or recursions, and not to test his/her understanding of the factorial function, which is either assumed to be known or is given in a mathematical form.
+
+Questions designed at a high level of abstraction are desirable because they force the student to model the problem and design a solution. The number of design decisions the student has to take in this process commensurately increases the probability of going wrong or getting stuck. Succeeding in solving such a problem is a good indicator of the student having `got it'. However, not being able to solve such complex design problems is not an indicator that the student has not understood the concepts. In case of failure to solve a complex problem, the problem of analysing the exact reason for failure is often intractable, and totally not worth it.
+
+The above observation allows designing questions at a very fine-grained level, without compromising what is being tested. Having said that, it is a significant challenge to design a question which does indeed test the student's knowledge on the topic in question. An obvious prerequisite to design such a question is a clarity about what is it that the student is supposed to know. Thus, questions should use \textit{learning objectives} as one of the primary references. If a learning objective requires the student to know how to write a for loop in Python, then any question that requires him/her to use for loop will suffice. For example:
+\begin{enumerate}
+\item Write a program that computes the factorial of a variable \lstinline@x@ which is defined in the beginning of the program. Use a for loop.
+\item Write a program that prints "Hello world." ten times. Use a for loop.
+\item Write a program that computes and prints the sum of all numbers in a list. Use a for loop.
+\end{enumerate}
+
+Note how some of the questions above are constraining the solution space to use only for loop. This is because the primary problem can be solved using other means too, e.g. while loop or recursion.
+\section{Designing Test Cases}
 From the point of view of test cases, there are a number of types of test cases each catering to a specific testing requirement. We elaborate on this aspect below.
 \subsection{Functions returning value}
 The simplest type of test cases are those which test if the output returned by a particular function is correct or not, e.g. whether an implementation of factorial function indeed returns the correct value, or whether the area of a triangle is computed correctly based on its base and height. In most cases, the value returned from a function of this kind is a simple piece of data which can be directly compared with the expected value.
@@ -36,13 +55,6 @@ There are function (procedures, to be strict) which result in variety of side ef
 
 \subsection{Programs with output}
 If the output of the program is what needs to be tested, then the program should be executed and its output should captured appropriately to be compared against an expected output.
-
-\subsection{Structural questions}
-Some test cases may need to check static aspects of the program. Some of these can be dynamically checked through a cleverly designed test case. However, in general, such features are not open to be tested dynamically, but have to be checked by performing static analysis of the source code. For example: Is class $A$ a base class of class $B$? Does class $B$ override method $m$ defined in its base class $A$? and so on. Designing test cases to check such aspects may be easy when the programming language in question provides reflection features (e.g. Java, Python). However, in absence of reflection (e.g. C), checking such features may require access to a parser infrastructure for the language.
-
-\section{Designing Questions}
-An important objective of introductory programming courses is to introduce students to basic programming constructs (e.g. branches, loops, functions, recursion, classes and inheritance), and preliminary application of these to solve \emph{very simple} computing problems. These courses stop short of teaching more advanced program design concepts, e.g. data-structure and algorithm design, which are covered in later courses. This results in a fairly regimented nature of what can be asked and how these questions can be answered. The level of abstraction of questions focuses primarily on programming constructs and not on program design. For example, if a question is about implementation of the factorial function, it will mostly be specified if the solution should use iteration or recursion. Note that the objective of such a question would be to test whether the student has understood such programming concepts as loops or recursions, and not to test his/her understanding of the factorial function, which is either assumed to be known or is given in a mathematical form.
-\section{Designing Test Cases}
 
 \section{Evaluating Objective Questions}
 
