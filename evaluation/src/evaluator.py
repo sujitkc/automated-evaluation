@@ -10,7 +10,7 @@ import functools
 class QType:
   def __init__(self, n, tm):
     self.domainSize = n
-    self.totalMarks = tm
+    self.totalMarks = float(tm)
 
 class MCQType(QType):
   def __init__(self, n, tm):
@@ -124,7 +124,7 @@ class ReferenceReader(Reader):
   @staticmethod
   def parseMTF(row, qtype):
     mtfrow = Reader.parseMTFRow(row)
-    mcqs = [ReferenceReader.parseMCQ(cell, MCQType(qtype.rangeSize, 0)) for cell in mtfrow]
+    mcqs = [ReferenceReader.parseMCQ(cell, MCQType(qtype.rangeSize, 1.0/qtype.rangeSize)) for cell in mtfrow]
     return MTFQuestion(mcqs, qtype)
 
   def readQuestionPaper(self, fileName):
@@ -164,18 +164,22 @@ class FileNotExistsError(Exception):
   def __init__(self, filename):
     Exception.__init__(self, "File " + filename + " doesn't exist.")
 
-class MCQuestion:
+class Question:
   def __init__(self, e, qtype):
     self.expected = e
     self.questionType = qtype
-    self.expectedChoices = self.convert(self.expected)
-
+    
   @property
-  def numberOfChoices(self):
+  def domainSize(self):
     return self.questionType.domainSize
 
+class MCQuestion(Question):
+  def __init__(self, e, qtype):
+    Question.__init__(self, e, qtype)
+    self.expectedChoices = self.convert(self.expected)
+
   def convert(self, indices):
-    choices = [False] * self.numberOfChoices
+    choices = [False] * self.domainSize
     for i in indices:
       choices[int(i) - 1] = True # the - 1 is to deal with the offset of index.
     return choices
@@ -191,7 +195,7 @@ class MCQuestion:
     for (a, b) in zipped:
       if(a == b):
         score += 1
-    return float(score) / float(self.numberOfChoices)
+    return float(score) / float(self.domainSize)
 
   def evaluate(self, answer):
     expectedChoices = self.convert(self.expected)
@@ -204,15 +208,11 @@ class MCQuestion:
       return 0
 
   def __str__(self):
-    return "MCQ(" + str(self.numberOfChoices) + ", " + str(self.expected) + ")"
+    return "MCQ(" + str(self.domainSize) + ", " + str(self.expected) + ")"
 
-class MTFQuestion:
+class MTFQuestion(Question):
   def __init__(self, e, qtype):
-    self.expected     = e
-    self.questionType = qtype
-  @property
-  def domainSize(self):
-    return self.questionType.domainSize
+    Question.__init__(self, e, qtype)
 
   @property
   def rangeSize(self):
@@ -257,7 +257,11 @@ class Evaluator:
     self.areader = AnswerReader(self.qtypes)
     self.questionPaper = self.qreader.readQuestionPaper("theory-answers.csv")
     reference = self.areader.readAnswers("theory-answers.csv")
-    self.totalMarks = self.questionPaper.evaluate(reference).total
+    self.referenceScore = self.questionPaper.evaluate(reference)
+
+  @property
+  def totalMarks(self):
+    return self.referenceScore.total
 
   def __evaluate__(self, rollNumber):
     print("evaluating ", rollNumber, " ...")
@@ -268,6 +272,8 @@ class Evaluator:
     except FileNotExistsError:
       return "File " + ansfile + " not found."
     except IncompatibleLengthError as e:
+      return e
+    except Exception as e:
       return e
 
   def evaluate(self):
