@@ -167,7 +167,22 @@
 \title{A System for Automated Evaluation of Objective Questions}
 \begin{document}
 
-\section{Generation of Question Paper Codes}
+\section{Question Paper Codes}
 
-To discourage cheating in the class, we generate a set of question papers by randomly selecting $n$ questions out of an item-bank of $N$ questions.
+\subsection{Question Paper Generation}
+To discourage cheating in the class, we generate a set of question papers by randomly selecting $n$ questions out of an item-bank of $N$ questions. $K$ such distinct question papers are generated, numbered 0, 1, ..., $K-1$. We call them \emph{assessment instruments}.
+
+The question paper generator module generates total $C$ question papers which can be categorised into $K$ distinct sets. Each of these $C$ question papers has a distinct question paper number on ranging from 1, 2, ..., $C$. This way, the students will not be able to identify which set their copy of the question paper belongs to. Each question paper will have an empty table called the \emph{response table} on page one which will be used by the student to fill in his answers (choices).
+
+This module will generate a map -- called $QP\mapsto AI$ between \emph{question paper code} to \emph{assessment instrument}.
+
+\subsection{TA's Job}
+The TA will note down following:
+\begin{enumerate}
+\item Question paper code for each roll number creating a \emph{roll number} to \emph{question paper code} map $RN\mapsto QP$.
+\item the responses into a CSV file corresponding to each student exactly as in the response table.
+\end{enumerate}
+
+\subsection{Automated Evaluation}
+The \emph{response rearranger} refers to the $RN\mapsto QP$ and $QP\mapsto AI$ map to extract the assessment instrument for each roll number. Using this, the evaluator rearranges the responses in the order as per the item bank to create a rearranged response for the roll number $n$, $R'(n)$. This is given to the evaluator for final automated evaluation.
 \end{document}
