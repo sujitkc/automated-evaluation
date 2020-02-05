@@ -6,6 +6,7 @@ import csv
 import string
 import subprocess
 import functools
+import traceback
 
 class QType:
   def __init__(self, n, tm):
@@ -274,6 +275,7 @@ class Evaluator:
     except IncompatibleLengthError as e:
       return e
     except Exception as e:
+      traceback.print_exc(file=sys.stdout)
       return e
 
   def evaluate(self):
